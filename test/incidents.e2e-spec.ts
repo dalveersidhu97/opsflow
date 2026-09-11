@@ -1,4 +1,6 @@
-import type { INestApplication } from '@nestjs/common';
+import type {
+    INestApplication,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import {
@@ -9,6 +11,7 @@ import {
     it,
 } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { configureApp } from '../src/app.setup.js';
 import {
     CLOCK,
     INCIDENT_ID_GENERATOR,
@@ -26,19 +29,22 @@ describe('Incidents API', () => {
                 .useValue({
                     now: () =>
                         new Date(
-                            '2026-09-02T17:30:00.000Z',
+                            '2026-09-07T16:00:00.000Z',
                         ),
                 })
                 .overrideProvider(
                     INCIDENT_ID_GENERATOR,
                 )
                 .useValue({
-                    newId: () => 'incident-e2e-001',
+                    newId: () =>
+                        'incident-e2e-001',
                 })
                 .compile();
 
         app =
             moduleReference.createNestApplication();
+
+        configureApp(app);
 
         await app.init();
     });
@@ -47,59 +53,104 @@ describe('Incidents API', () => {
         await app.close();
     });
 
-    it('creates an incident through HTTP', async () => {
-        const response = await request(
-            app.getHttpServer(),
-        )
-            .post('/incidents')
-            .send({
-                title: '  Scanner station unavailable  ',
-                description: '  Station 14  ',
+    it(
+        'creates an incident through version one',
+        async () => {
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .post('/v1/incidents')
+                .send({
+                    title:
+                        'Scanner station unavailable',
+                    description: 'Station 14',
+                    priority: 'CRITICAL',
+                })
+                .expect(201);
+
+            expect(response.body).toEqual({
+                id: 'incident-e2e-001',
+                title:
+                    'Scanner station unavailable',
+                description: 'Station 14',
                 priority: 'CRITICAL',
+                status: 'OPEN',
+                reporterId: 'demo-user-001',
+                createdAt:
+                    '2026-09-07T16:00:00.000Z',
+            });
+        },
+    );
 
-                // Attempts to overwrite protected fields:
-                reporterId: 'administrator',
-                status: 'RESOLVED',
-            })
-            .expect(201);
+    it(
+        'returns structured validation errors',
+        async () => {
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .post('/v1/incidents')
+                .send({
+                    title: 'x',
+                    priority: 'EMERGENCY',
+                })
+                .expect(400);
 
-        expect(response.body).toEqual({
-            id: 'incident-e2e-001',
-            title: 'Scanner station unavailable',
-            description: 'Station 14',
-            priority: 'CRITICAL',
-            status: 'OPEN',
-            reporterId: 'demo-user-001',
-            createdAt: '2026-09-02T17:30:00.000Z',
-        });
-    });
+            expect(response.body).toEqual({
+                statusCode: 400,
+                code:
+                    'REQUEST_VALIDATION_FAILED',
+                message:
+                    'Request validation failed',
+                issues: expect.arrayContaining([
+                    'title must contain 5 to 120 characters',
+                    'priority must be one of: LOW, MEDIUM, HIGH, CRITICAL',
+                ]),
+            });
+        },
+    );
 
-    it('returns a controlled 400 response', async () => {
-        const response = await request(
-            app.getHttpServer(),
-        )
-            .post('/incidents')
-            .send({
-                title: 'x',
-                priority: 'EMERGENCY',
-            })
-            .expect(400);
+    it(
+        'rejects server-controlled properties',
+        async () => {
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .post('/v1/incidents')
+                .send({
+                    title:
+                        'Sorting machine stopped',
+                    priority: 'HIGH',
+                    reporterId: 'administrator',
+                    status: 'RESOLVED',
+                })
+                .expect(400);
 
-        expect(response.body.code).toBe(
-            'INCIDENT_INPUT_INVALID',
-        );
+            expect(response.body.code).toBe(
+                'REQUEST_VALIDATION_FAILED',
+            );
 
-        expect(response.body.message).toBe(
-            'Incident input is invalid',
-        );
+            expect(response.body.issues).toEqual(
+                expect.arrayContaining([
+                    'property reporterId should not exist',
+                    'property status should not exist',
+                ]),
+            );
+        },
+    );
 
-        expect(response.body.issues).toEqual(
-            expect.arrayContaining([
-                'title must contain 5 to 120 characters',
-                expect.stringContaining(
-                    'priority must be one of',
-                ),
-            ]),
-        );
-    });
+    it(
+        'does not expose the API without a version',
+        async () => {
+            await request(
+                app.getHttpServer(),
+            )
+                .post('/incidents')
+                .send({
+                    title:
+                        'Scanner station unavailable',
+                    priority: 'HIGH',
+                })
+                .expect(404);
+        },
+    );
 });
