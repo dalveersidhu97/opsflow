@@ -4,12 +4,16 @@ import {
 } from '@nestjs/swagger';
 import {
     IsIn,
-    IsOptional,
     IsString,
     Length,
+    MaxLength,
+    ValidateIf,
 } from 'class-validator';
 import {
+    INCIDENT_DESCRIPTION_MAX_LENGTH,
     INCIDENT_PRIORITIES,
+    INCIDENT_TITLE_MAX_LENGTH,
+    INCIDENT_TITLE_MIN_LENGTH,
     type IncidentPriority,
 } from '../domain/incident.js';
 
@@ -18,27 +22,42 @@ export class CreateIncidentRequestDto {
         description:
             'Short summary of the operational problem',
         example: 'Sorting machine stopped',
-        minLength: 5,
-        maxLength: 120,
+        minLength: INCIDENT_TITLE_MIN_LENGTH,
+        maxLength: INCIDENT_TITLE_MAX_LENGTH,
     })
     @IsString({
         message: 'title must be a string',
     })
-    @Length(5, 120, {
-        message:
-            'title must contain 5 to 120 characters',
-    })
+    @Length(
+        INCIDENT_TITLE_MIN_LENGTH,
+        INCIDENT_TITLE_MAX_LENGTH,
+        {
+            message:
+                `title must contain ${INCIDENT_TITLE_MIN_LENGTH} to ${INCIDENT_TITLE_MAX_LENGTH} characters`,
+        },
+    )
     title!: string;
 
     @ApiPropertyOptional({
         description:
-            'Additional information about the incident',
+            'Additional incident information',
         example: 'Packages are backing up',
+        maxLength:
+            INCIDENT_DESCRIPTION_MAX_LENGTH,
     })
-    @IsOptional()
+    @ValidateIf(
+        (_object, value) => value !== undefined,
+    )
     @IsString({
         message: 'description must be a string',
     })
+    @MaxLength(
+        INCIDENT_DESCRIPTION_MAX_LENGTH,
+        {
+            message:
+                `description cannot exceed ${INCIDENT_DESCRIPTION_MAX_LENGTH} characters`,
+        },
+    )
     description?: string;
 
     @ApiProperty({
@@ -47,10 +66,12 @@ export class CreateIncidentRequestDto {
         enum: [...INCIDENT_PRIORITIES],
         example: 'HIGH',
     })
+    @IsString({
+        message: 'priority must be a string',
+    })
     @IsIn([...INCIDENT_PRIORITIES], {
         message:
-            `priority must be one of: ${INCIDENT_PRIORITIES.join(', ')
-            }`,
+            `priority must be one of: ${INCIDENT_PRIORITIES.join(', ')}`,
     })
     priority!: IncidentPriority;
 }

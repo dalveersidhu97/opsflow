@@ -6,6 +6,7 @@ import {
 import {
     DocumentBuilder,
     SwaggerModule,
+    type OpenAPIObject,
 } from '@nestjs/swagger';
 import { createRequestValidationPipe } from './common/http/request-validation.pipe.js';
 
@@ -22,9 +23,9 @@ export function configureApp(
     );
 }
 
-export function configureOpenApi(
+export function createOpenApiDocument(
     app: INestApplication,
-): void {
+): OpenAPIObject {
     const config = new DocumentBuilder()
         .setTitle('OpsFlow API')
         .setDescription(
@@ -37,15 +38,18 @@ export function configureOpenApi(
         )
         .build();
 
-    const documentFactory = () =>
-        SwaggerModule.createDocument(
-            app,
-            config,
-        );
+    return SwaggerModule.createDocument(
+        app,
+        config,
+    );
+}
 
+export function configureOpenApi(
+    app: INestApplication,
+): void {
     SwaggerModule.setup(
         'docs',
         app,
-        documentFactory,
+        createOpenApiDocument(app),
     );
 }

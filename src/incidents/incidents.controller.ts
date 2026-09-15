@@ -11,10 +11,12 @@ import {
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
+import { ApiErrorResponseDto } from '../common/http/api-error-response.dto.js';
 import { CreateIncidentService } from './application/create-incident.service.js';
 import { InputValidationError } from './domain/input-validation.error.js';
 import { CreateIncidentRequestDto } from './http/create-incident-request.dto.js';
 import { IncidentResponseDto } from './http/incident-response.dto.js';
+import { mapIncidentResponse } from './http/map-incident-response.js';
 
 const DEMO_AUTHENTICATED_REPORTER_ID =
     'demo-user-001';
@@ -33,8 +35,6 @@ export class IncidentsController {
     @Post()
     @ApiOperation({
         summary: 'Create an incident',
-        description:
-            'Creates an open incident for the authenticated reporter.',
     })
     @ApiCreatedResponse({
         description:
@@ -44,26 +44,20 @@ export class IncidentsController {
     @ApiBadRequestResponse({
         description:
             'The request or incident data is invalid.',
-        schema: {
-            example: {
-                statusCode: 400,
-                code: 'REQUEST_VALIDATION_FAILED',
-                message: 'Request validation failed',
-                issues: [
-                    'title must contain 5 to 120 characters',
-                ],
-            },
-        },
+        type: ApiErrorResponseDto,
     })
     create(
         @Body()
         body: CreateIncidentRequestDto,
     ): IncidentResponseDto {
         try {
-            return this.createIncidentService.execute(
-                body,
-                DEMO_AUTHENTICATED_REPORTER_ID,
-            );
+            const incident =
+                this.createIncidentService.execute(
+                    body,
+                    DEMO_AUTHENTICATED_REPORTER_ID,
+                );
+
+            return mapIncidentResponse(incident);
         } catch (error: unknown) {
             if (
                 error instanceof

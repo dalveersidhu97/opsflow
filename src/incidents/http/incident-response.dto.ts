@@ -8,7 +8,8 @@ import {
 export class IncidentResponseDto
     implements Incident {
     @ApiProperty({
-        description: 'Unique incident identifier',
+        description:
+            'Unique incident identifier',
         example:
             'e2576e72-a55f-4317-a7bb-f08f61c77dce',
     })
@@ -20,6 +21,7 @@ export class IncidentResponseDto
     title!: string;
 
     @ApiProperty({
+        type: String,
         nullable: true,
         example: 'Packages are backing up',
     })
@@ -32,8 +34,6 @@ export class IncidentResponseDto
     priority!: IncidentPriority;
 
     @ApiProperty({
-        description:
-            'Current incident lifecycle state',
         example: 'OPEN',
     })
     status!: Incident['status'];
@@ -46,9 +46,9 @@ export class IncidentResponseDto
     reporterId!: string;
 
     @ApiProperty({
-        description: 'ISO 8601 creation timestamp',
-        example: '2026-09-07T16:00:00.000Z',
         format: 'date-time',
+        example:
+            '2026-09-14T16:00:00.000Z',
     })
     createdAt!: string;
 }

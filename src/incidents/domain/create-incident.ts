@@ -1,5 +1,8 @@
 import {
+    INCIDENT_DESCRIPTION_MAX_LENGTH,
     INCIDENT_PRIORITIES,
+    INCIDENT_TITLE_MAX_LENGTH,
+    INCIDENT_TITLE_MIN_LENGTH,
     type CreateIncidentInput,
     type Incident,
     type IncidentPriority,
@@ -51,11 +54,13 @@ export function parseCreateIncidentInput(
         const normalizedTitle = raw.title.trim();
 
         if (
-            normalizedTitle.length < 5 ||
-            normalizedTitle.length > 120
+            normalizedTitle.length <
+            INCIDENT_TITLE_MIN_LENGTH ||
+            normalizedTitle.length >
+            INCIDENT_TITLE_MAX_LENGTH
         ) {
             issues.push(
-                'title must contain 5 to 120 characters',
+                `title must contain ${INCIDENT_TITLE_MIN_LENGTH} to ${INCIDENT_TITLE_MAX_LENGTH} characters`,
             );
         } else {
             title = normalizedTitle;
@@ -76,12 +81,16 @@ export function parseCreateIncidentInput(
             const normalizedDescription =
                 raw.description.trim();
 
-            if (normalizedDescription.length > 2_000) {
+            if (
+                normalizedDescription.length >
+                INCIDENT_DESCRIPTION_MAX_LENGTH
+            ) {
                 issues.push(
-                    'description cannot exceed 2000 characters',
+                    `description cannot exceed ${INCIDENT_DESCRIPTION_MAX_LENGTH} characters`,
                 );
             } else {
-                description = normalizedDescription || null;
+                description =
+                    normalizedDescription || null;
             }
         }
     }
@@ -116,7 +125,8 @@ export function createIncident(
     authenticatedReporterId: string,
     dependencies: IncidentCreationDependencies,
 ): Incident {
-    const reporterId = authenticatedReporterId.trim();
+    const reporterId =
+        authenticatedReporterId.trim();
 
     if (!reporterId) {
         throw new Error(
