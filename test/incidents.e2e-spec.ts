@@ -22,6 +22,9 @@ import {
     INCIDENT_ID_GENERATOR,
 } from '../src/incidents/application/ports.js';
 import { INCIDENT_PRIORITIES } from '../src/incidents/domain/incident.js';
+import {
+    INCIDENT_REPOSITORY,
+} from '../src/incidents/application/incident.repository.js';
 
 interface OpenApiTestSchema {
     required?: string[];
@@ -56,6 +59,12 @@ describe('Incidents API', () => {
                 .useValue({
                     newId: () =>
                         'incident-e2e-001',
+                })
+                .overrideProvider(
+                    INCIDENT_REPOSITORY,
+                )
+                .useValue({
+                    save: async () => undefined,
                 })
                 .compile();
 
@@ -319,7 +328,7 @@ describe('Incidents API', () => {
             vi.spyOn(
                 service,
                 'execute',
-            ).mockImplementationOnce(() => {
+            ).mockRejectedValueOnce(() => {
                 throw new Error(privateError);
             });
 

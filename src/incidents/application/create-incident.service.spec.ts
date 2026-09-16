@@ -1,53 +1,112 @@
-import { Test } from "@nestjs/testing";
-import { CreateIncidentService } from "./create-incident.service.js";
-import { CLOCK, Clock, INCIDENT_ID_GENERATOR, IncidentIdGenerator } from "./ports.js";
+import {
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
+import type { IncidentRepository } from './incident.repository.js';
+import { CreateIncidentService } from './create-incident.service.js';
+import type {
+    Clock,
+    IncidentIdGenerator,
+} from './ports.js';
 
 describe('CreateIncidentService', () => {
-    let service: CreateIncidentService;
-    const fakeClock: Clock = {
-        now: () => new Date('2026-09-02T16:00:00.000Z'),
-    };
+    it(
+        'creates and persists an incident',
+        async () => {
+            const clock: Clock = {
+                now: () =>
+                    new Date(
+                        '2026-09-15T16:00:00.000Z',
+                    ),
+            };
 
-    const fakeIdGenerator: IncidentIdGenerator = {
-        newId: () => 'incident-service-001',
-    };
+            const idGenerator:
+                IncidentIdGenerator = {
+                newId: () =>
+                    'e2576e72-a55f-4317-a7bb-f08f61c77dce',
+            };
 
-    beforeEach(async () => {
-        const moduleReference = await Test.createTestingModule({
-            providers: [
-                CreateIncidentService,
-                {
-                    provide: CLOCK,
-                    useValue: fakeClock,
-                },
-                {
-                    provide: INCIDENT_ID_GENERATOR,
-                    useValue: fakeIdGenerator,
-                },
-            ],
-        }).compile();
+            const save = vi.fn(
+                async (): Promise<void> =>
+                    undefined,
+            );
 
-        service = moduleReference.get(CreateIncidentService);
-    });
+            const repository:
+                IncidentRepository = {
+                save,
+            };
 
+            const service =
+                new CreateIncidentService(
+                    clock,
+                    idGenerator,
+                    repository,
+                );
 
-    it('creates an incident using injected dependencies', () => {
-        const result = service.execute(
-            {
-                title: 'Loading dock door is blocked',
+            const incident =
+                await service.execute(
+                    {
+                        title: 'Scanner unavailable',
+                        priority: 'HIGH',
+                    },
+                    'demo-user-001',
+                );
+
+            expect(incident).toEqual({
+                id:
+                    'e2576e72-a55f-4317-a7bb-f08f61c77dce',
+                title: 'Scanner unavailable',
+                description: null,
                 priority: 'HIGH',
-            },
-            'user-42',
-        );
+                status: 'OPEN',
+                reporterId: 'demo-user-001',
+                createdAt:
+                    '2026-09-15T16:00:00.000Z',
+            });
 
-        expect(result).toEqual({
-            id: 'incident-service-001',
-            title: 'Loading dock door is blocked',
-            description: null,
-            priority: 'HIGH',
-            status: 'OPEN',
-            reporterId: 'user-42',
-            createdAt: '2026-09-02T16:00:00.000Z',
-        });
-    });
+            expect(save).toHaveBeenCalledOnce();
+            expect(save).toHaveBeenCalledWith(
+                incident,
+            );
+        },
+    );
+
+    it(
+        'does not resolve when persistence fails',
+        async () => {
+            const databaseError =
+                new Error('database unavailable');
+
+            const service =
+                new CreateIncidentService(
+                    {
+                        now: () =>
+                            new Date(
+                                '2026-09-15T16:00:00.000Z',
+                            ),
+                    },
+                    {
+                        newId: () =>
+                            'e2576e72-a55f-4317-a7bb-f08f61c77dce',
+                    },
+                    {
+                        save: async () => {
+                            throw databaseError;
+                        },
+                    },
+                );
+
+            await expect(
+                service.execute(
+                    {
+                        title: 'Scanner unavailable',
+                        priority: 'HIGH',
+                    },
+                    'demo-user-001',
+                ),
+            ).rejects.toBe(databaseError);
+        },
+    );
 });

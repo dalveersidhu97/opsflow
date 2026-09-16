@@ -46,13 +46,13 @@ export class IncidentsController {
             'The request or incident data is invalid.',
         type: ApiErrorResponseDto,
     })
-    create(
+    async create(
         @Body()
         body: CreateIncidentRequestDto,
-    ): IncidentResponseDto {
+    ): Promise<IncidentResponseDto> {
         try {
             const incident =
-                this.createIncidentService.execute(
+                await this.createIncidentService.execute(
                     body,
                     DEMO_AUTHENTICATED_REPORTER_ID,
                 );
