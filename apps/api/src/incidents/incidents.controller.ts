@@ -98,6 +98,6 @@ export class IncidentsController {
     @Get()
     async listIncidents(@Query() listIncidentInput: ListIncidentsQueryDto): Promise<ListIncidentsResponseDto> {
         const { incidents, nextCursor } = (await this.listIncidentService.list(listIncidentInput));
-        return { incidents: incidents.map(mapIncidentResponse), nextCursor };
+        return { items: incidents.map(mapIncidentResponse), nextCursor };
     }
 }

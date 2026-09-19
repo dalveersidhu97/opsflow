@@ -564,9 +564,9 @@ describe('Incidents API', () => {
             )
                 .get('/v1/incidents').query({ limit: 2 })
                 .expect(200);
-            expect(response.body.incidents.length).toBe(2);
-            expect(response.body.incidents[0]).toEqual(expect.objectContaining({ id: testIncidents[0].id }));
-            expect(response.body.incidents[1]).toEqual(expect.objectContaining({ id: testIncidents[1].id }));
+            expect(response.body.items.length).toBe(2);
+            expect(response.body.items[0]).toEqual(expect.objectContaining({ id: testIncidents[0].id }));
+            expect(response.body.items[1]).toEqual(expect.objectContaining({ id: testIncidents[1].id }));
             expect(response.body.nextCursor).toBe(expectedCursorBase64);
         }
     )
@@ -583,9 +583,9 @@ describe('Incidents API', () => {
             )
                 .get('/v1/incidents').query({ limit: 5 })
                 .expect(200);
-            expect(response.body.incidents.length).toBe(5);
+            expect(response.body.items.length).toBe(5);
             let i = 0;
-            for (let incident of response.body.incidents) {
+            for (let incident of response.body.items) {
                 expect(incident).toEqual(expect.objectContaining({ id: testIncidents[i].id }));
                 i++;
             }
@@ -605,7 +605,7 @@ describe('Incidents API', () => {
             )
                 .get('/v1/incidents')
                 .expect(200);
-            expect(response.body.incidents.length).toBe(INCIDENT_DEFAULT_LIMIT);
+            expect(response.body.items.length).toBe(INCIDENT_DEFAULT_LIMIT);
         }
     )
     it(
@@ -628,8 +628,8 @@ describe('Incidents API', () => {
             )
                 .get('/v1/incidents').query({ limit, cursor: nextCursor })
                 .expect(200);
-            expect(response.body.incidents.length).toBe(limit);
-            expect(response.body.incidents.map((incident: any) => incident.id)).toStrictEqual(expectedIncidents.map(i => i.id));
+            expect(response.body.items.length).toBe(limit);
+            expect(response.body.items.map((incident: any) => incident.id)).toStrictEqual(expectedIncidents.map(i => i.id));
             expect(response.body.nextCursor).toBe(expectedNextCursor);
         }
     )
