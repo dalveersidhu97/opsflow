@@ -16,7 +16,7 @@ export class ListIncidentsService {
     ): Promise<{ incidents: Incident[], nextCursor: string | null }> {
         const { limit } = input;
         const incidents = await this.incidentRepository.findPage(input);
-        const nextCursor = incidents.length > limit ? encodeIncidentCursor({ createdAt: incidents[limit].createdAt, id: incidents[limit].id }) : null;
+        const nextCursor = incidents.length > limit ? encodeIncidentCursor({ createdAt: incidents[limit - 1].createdAt, id: incidents[limit - 1].id }) : null;
         return { nextCursor, incidents: incidents.slice(0, limit) };
     }
 }

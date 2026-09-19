@@ -557,7 +557,7 @@ describe('Incidents API', () => {
                 INCIDENT_REPOSITORY,
             );
             vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents.slice(0, 3));
-            const expectedCursor: IncidentCursor = { createdAt: testIncidents[2].createdAt, id: testIncidents[2].id };
+            const expectedCursor: IncidentCursor = { createdAt: testIncidents[1].createdAt, id: testIncidents[1].id };
             const expectedCursorBase64 = Buffer.from(JSON.stringify(expectedCursor)).toString('base64url');
             const response = await request(
                 app.getHttpServer(),
@@ -621,7 +621,7 @@ describe('Incidents API', () => {
             const cursor: IncidentCursor = { createdAt: testIncidents[lastPage * limit].createdAt, id: testIncidents[lastPage * limit].id };
             const nextCursor = Buffer.from(JSON.stringify(cursor)).toString('base64url');
             const expectedIncidents = testIncidents.slice(limit * lastPage, lastPage * limit + limit);
-            const expectedCursor: IncidentCursor = { createdAt: testIncidents[(lastPage + 1) * limit].createdAt, id: testIncidents[(lastPage + 1) * limit].id };
+            const expectedCursor: IncidentCursor = { createdAt: testIncidents[(lastPage + 1) * limit - 1].createdAt, id: testIncidents[(lastPage + 1) * limit - 1].id };
             const expectedNextCursor = Buffer.from(JSON.stringify(expectedCursor)).toString('base64url');
             const response = await request(
                 app.getHttpServer(),

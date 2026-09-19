@@ -59,7 +59,7 @@ describe('ListIncidentService', () => {
         }
         const service = new ListIncidentsService(repository);
         const result = await service.list({ cursor: null, limit: 1 });
-        const nextExpectedCursor = encodeIncidentCursor({ createdAt: testIncidents[1].createdAt, id: testIncidents[1].id });
+        const nextExpectedCursor = encodeIncidentCursor({ createdAt: testIncidents[0].createdAt, id: testIncidents[0].id });
         expect(result.nextCursor).toBe(nextExpectedCursor);
         expect(result.incidents).toEqual([testIncidents[0]])
     });

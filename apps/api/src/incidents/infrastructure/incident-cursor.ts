@@ -18,7 +18,7 @@ export function decodeIncidentCursor(value: string): IncidentCursor {
     if (!(date instanceof Date)) {
         throw new IncidentCursorError('createdAt must be date')
     }
-    return { createdAt: date.toISOString(), id };
+    return { createdAt: date.toISOString(), id: cursorObject.id };
 }
 
 export function encodeIncidentCursor(

@@ -23,7 +23,7 @@ export class PostgresIncidentRepository
             reporter_id AS "reporterId",
             created_at AS "createdAt"
         FROM incidents
-        ${hasCursor ? 'WHERE (created_at, id) < ($1, $2)' : ''}
+        ${hasCursor ? 'WHERE (created_at, id) < ($1::timestamptz, $2::uuid)' : ''}
         ORDER BY created_at DESC, id DESC
         LIMIT $${hasCursor ? 3 : 1};
     `;
