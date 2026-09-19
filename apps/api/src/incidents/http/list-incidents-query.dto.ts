@@ -1,41 +1,15 @@
-import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, ValidateNested } from "class-validator";
-import { FindIncidentPageInput, type IncidentCursor } from "../application/incident.repository.js";
-import { plainToInstance, Transform, Type } from "class-transformer";
+import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { Type } from "class-transformer";
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { decodeIncidentCursor } from "../infrastructure/incident-cursor.js";
 import { INCIDENT_DEFAULT_LIMIT, INCIDENT_MAX_LIMIT, INCIDENT_MIN_LIMIT } from "../constants/incident-pagination-contants.js";
 
-class CursorDto implements IncidentCursor {
-    @IsNotEmpty()
-    @IsDateString()
-    createdAt: string;
-
-    @IsString()
-    @IsNotEmpty()
-    id: string;
-}
-
-export class ListIncidentsQueryDto implements FindIncidentPageInput {
+export class ListIncidentsQueryDto {
     @ApiPropertyOptional({
-        description: 'Base64 encoded cursor JSON',
+        description: 'Base64 encoded cursor string',
     })
     @IsOptional()
-    @Transform(({ value }) => {
-        if (value === undefined) {
-            return null;
-        }
-
-        try {
-            const decoded = decodeIncidentCursor(value);
-            return plainToInstance(CursorDto, decoded);
-        } catch {
-            return value;
-        }
-    })
-    @ValidateNested({
-        message: 'Invalid cursor',
-    })
-    cursor: CursorDto | null;
+    @IsString({ message: 'cursor must be a string' })
+    cursor?: string;
 
     @ApiPropertyOptional({
         default: INCIDENT_DEFAULT_LIMIT,

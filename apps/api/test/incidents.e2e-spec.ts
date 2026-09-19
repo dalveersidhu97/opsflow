@@ -147,7 +147,7 @@ describe('Incidents API', () => {
                 )
                 .useValue({
                     save: async () => undefined,
-                    findPage: async () => undefined
+                    findPage: async () => []
                 })
                 .compile();
 
@@ -515,9 +515,7 @@ describe('Incidents API', () => {
             )
                 .get('/v1/incidents').query({ limit: 1, cursor: 'sdfsdf34534errgf' })
                 .expect(400);
-
-            expect(response.body.issues).toContain('Invalid cursor');
-            expect(response.body.code).toBe('REQUEST_VALIDATION_FAILED');
+            expect(response.body.code).toBe('INVALID_INCIDENT_CURSOR');
         }
     )
 

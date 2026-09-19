@@ -128,6 +128,20 @@ async function insertIncidents(incidents: Incident[], db: PostgresDatabase): Pro
     }
 }
 
+const databaseUrl =
+    process.env.DATABASE_URL;
+
+if (
+    databaseUrl &&
+    !databaseUrl.includes(
+        '/opsflow_test',
+    )
+) {
+    throw new Error(
+        'Database integration tests must use opsflow_test',
+    );
+}
+
 const describeWithDatabase =
     process.env.DATABASE_URL
         ? describe
@@ -254,13 +268,13 @@ describeWithDatabase(
                 const limit = 5;
                 // Page 1
                 const insidents = await repository.findPage({ limit: limit, cursor: null });
-                expect(insidents.length).toEqual(limit + 1);
-                expect(insidents).toEqual(expectedInOrder.slice(0, limit + 1));
+                expect(insidents.length).toEqual(limit);
+                expect(insidents).toEqual(expectedInOrder.slice(0, limit));
                 // Page 2
                 const page2Cursor = { createdAt: insidents[limit - 1].createdAt, id: insidents[limit - 1].id };
                 const insidents2 = await repository.findPage({ limit: limit, cursor: page2Cursor });
-                expect(insidents2.length).toEqual(limit + 1);
-                expect(insidents2).toEqual(expectedInOrder.slice(1 * limit, limit * 2 + 1));
+                expect(insidents2.length).toEqual(limit);
+                expect(insidents2).toEqual(expectedInOrder.slice(1 * limit, limit * 2));
                 // Page 3
                 const page3Cursor = { createdAt: insidents2[limit - 1].createdAt, id: insidents2[limit - 1].id };
                 const insidents3 = await repository.findPage({ limit: limit, cursor: page3Cursor });

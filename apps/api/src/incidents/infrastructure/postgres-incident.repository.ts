@@ -29,8 +29,8 @@ export class PostgresIncidentRepository
     `;
 
         const queryParams = hasCursor
-            ? [input.cursor!.createdAt, input.cursor!.id, input.limit + 1]
-            : [input.limit + 1];
+            ? [input.cursor!.createdAt, input.cursor!.id, input.limit]
+            : [input.limit];
 
         const result = await this.database.query<Incident & { createdAt: Date }>(
             queryText,

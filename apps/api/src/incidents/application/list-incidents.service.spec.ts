@@ -1,6 +1,7 @@
 import { Incident } from "../domain/incident.js";
-import { encodeIncidentCursor } from "../infrastructure/incident-cursor.js";
+import { encodeIncidentCursor } from "./incident-cursor.js";
 import { IncidentRepository } from "./incident.repository.js";
+import { IncidentCursorError } from "./invalid-incident-cursor.error.js";
 import { ListIncidentsService } from "./list-incidents.service.js";
 
 const testIncidents: Incident[] = [
@@ -53,14 +54,32 @@ const testIncidents: Incident[] = [
 
 describe('ListIncidentService', () => {
     it('returns right cursor and element', async () => {
+        const findPage = vi.fn(async () => testIncidents.slice(0, 2))
         const repository: IncidentRepository = {
             save: async () => { },
-            findPage: vi.fn(async () => testIncidents.slice(0, 2))
+            findPage
         }
         const service = new ListIncidentsService(repository);
-        const result = await service.list({ cursor: null, limit: 1 });
+        const result = await service.list({ limit: 1 });
         const nextExpectedCursor = encodeIncidentCursor({ createdAt: testIncidents[0].createdAt, id: testIncidents[0].id });
         expect(result.nextCursor).toBe(nextExpectedCursor);
-        expect(result.incidents).toEqual([testIncidents[0]])
+        expect(result.incidents).toEqual([testIncidents[0]]);
+        expect(findPage).toHaveBeenCalledWith({
+            limit: 2,
+            cursor: null,
+        });
+
+        const cursor = Buffer.from(
+            JSON.stringify({
+                createdAt: 'not-a-date',
+                id: 'incident-1',
+            }),
+        ).toString('base64url');
+
+        await expect(
+            service.list({ limit: 20, cursor }),
+        ).rejects.toBeInstanceOf(
+            IncidentCursorError,
+        );
     });
 });
