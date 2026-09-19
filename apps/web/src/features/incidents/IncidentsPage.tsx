@@ -52,7 +52,7 @@ export function IncidentsPage() {
 
     const incidents =
         query.data.pages.flatMap(
-            (page) => page.incidents,
+            (page) => page.items,
         );
 
     return (

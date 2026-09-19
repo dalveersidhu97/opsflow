@@ -17,7 +17,7 @@ export interface Incident {
 }
 
 export interface IncidentPage {
-    incidents: Incident[];
+    items: Incident[];
     nextCursor: string | null;
 }
 
