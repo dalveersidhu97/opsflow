@@ -255,7 +255,7 @@ describeWithDatabase(
                 // Page 1
                 const insidents = await repository.findPage({ limit: limit, cursor: null });
                 expect(insidents.length).toEqual(limit + 1);
-                expect(insidents).toEqual(expectedInOrder.slice(0 * limit, limit + 1));
+                expect(insidents).toEqual(expectedInOrder.slice(0, limit + 1));
                 // Page 2
                 const page2Cursor = { createdAt: insidents[limit - 1].createdAt, id: insidents[limit - 1].id };
                 const insidents2 = await repository.findPage({ limit: limit, cursor: page2Cursor });

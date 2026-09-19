@@ -27,7 +27,6 @@ import {
     IncidentCursor,
     IncidentRepository,
 } from '../src/incidents/application/incident.repository.js';
-import { randomUUID } from 'crypto';
 import { INCIDENT_DEFAULT_LIMIT, INCIDENT_MAX_LIMIT, INCIDENT_MIN_LIMIT } from '../src/incidents/constants/incident-pagination-contants.js';
 
 interface OpenApiTestSchema {
@@ -557,9 +556,7 @@ describe('Incidents API', () => {
             const repository = app.get<IncidentRepository>(
                 INCIDENT_REPOSITORY,
             );
-            vi.spyOn(repository, 'findPage').mockResolvedValue([
-                ...testIncidents.slice(0, 3)
-            ]);
+            vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents.slice(0, 3));
             const expectedCursor: IncidentCursor = { createdAt: testIncidents[2].createdAt, id: testIncidents[2].id };
             const expectedCursorBase64 = Buffer.from(JSON.stringify(expectedCursor)).toString('base64url');
             const response = await request(
@@ -580,9 +577,7 @@ describe('Incidents API', () => {
             const repository = app.get<IncidentRepository>(
                 INCIDENT_REPOSITORY,
             );
-            vi.spyOn(repository, 'findPage').mockResolvedValue([
-                ...testIncidents.slice(0, 5)
-            ]);
+            vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents.slice(0, 5));
             const response = await request(
                 app.getHttpServer(),
             )
