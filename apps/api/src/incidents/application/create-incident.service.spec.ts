@@ -36,6 +36,7 @@ describe('CreateIncidentService', () => {
             const repository:
                 IncidentRepository = {
                 save,
+                findPage: async () => []
             };
 
             const service =
@@ -95,6 +96,9 @@ describe('CreateIncidentService', () => {
                         save: async () => {
                             throw databaseError;
                         },
+                        findPage: async () => {
+                            throw databaseError
+                        }
                     },
                 );
 

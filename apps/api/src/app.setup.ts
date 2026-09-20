@@ -21,6 +21,12 @@ export function configureApp(
     app.useGlobalPipes(
         createRequestValidationPipe(),
     );
+
+    app.enableCors({
+        origin:
+            process.env.WEB_ORIGIN ??
+            'http://localhost:5173',
+    });
 }
 
 export function createOpenApiDocument(

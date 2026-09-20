@@ -20,6 +20,131 @@ interface StoredIncidentRow {
     created_at: Date;
 }
 
+<<<<<<< HEAD
+=======
+
+const testIncidents: Incident[] = [
+    {
+        id: 'e2576e72-a55f-4317-a7bb-f08f617c7dce',
+        createdAt: '2026-09-17T04:39:31.864Z',
+        description: 'Main gate camera failed.',
+        priority: 'MEDIUM',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'e2576e72-a55f-4317-a7bb-f08f61c7cdce',
+        createdAt: '2026-09-19T04:39:31.864Z',
+        description: 'Broken ring scanner.',
+        priority: 'HIGH',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'e2576e72-a55f-4317-a7bc-f08f61c77dce',
+        createdAt: '2026-09-18T04:39:31.864Z',
+        description: 'Network error on site.',
+        priority: 'CRITICAL',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'c2576e72-a55f-4317-a7bb-f08f61c77dce',
+        createdAt: '2026-08-16T04:39:31.864Z',
+        description: 'Main gate camera failed.',
+        priority: 'MEDIUM',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'b2576e72-a55f-4317-a7bb-f08f61c77dce',
+        createdAt: '2026-08-17T04:39:31.864Z',
+        description: 'Shortage of safety wests.',
+        priority: 'LOW',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    }
+];
+
+function generateTestIncidents(count: number): Incident[] {
+    const priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+    const statuses = ['OPEN'] as const;
+
+    const startTime = Date.UTC(2026, 8, 19, 12, 0, 0);
+
+    return Array.from({ length: count }, (_, index): Incident => {
+        // Every 3 incidents have the same createdAt.
+        // This forces the DB to use id as a tie-breaker.
+        const timestampGroup = Math.floor(index / 3);
+
+        return {
+            id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+
+            createdAt: new Date(
+                startTime - timestampGroup * 60_000,
+            ).toISOString(),
+
+            title: `Test incident ${index + 1}`,
+
+            description: `Test incident description ${index + 1}`,
+
+            priority: priorities[index % priorities.length],
+
+            reporterId: `reporter-${(index % 5) + 1}`,
+
+            status: statuses[index % statuses.length],
+        };
+    });
+}
+
+async function insertIncidents(incidents: Incident[], db: PostgresDatabase): Promise<void> {
+    for (const incident of incidents) {
+        await db.query(
+            `
+        INSERT INTO incidents (
+          id,
+          title,
+          description,
+          priority,
+          status,
+          reporter_id,
+          created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+            [
+                incident.id,
+                incident.title,
+                incident.description,
+                incident.priority,
+                incident.status,
+                incident.reporterId,
+                incident.createdAt,
+            ],
+        );
+    }
+}
+
+const databaseUrl =
+    process.env.DATABASE_URL;
+
+if (
+    databaseUrl &&
+    !databaseUrl.includes(
+        '/opsflow_test',
+    )
+) {
+    throw new Error(
+        'Database integration tests must use opsflow_test',
+    );
+}
+
+>>>>>>> day_13
 const describeWithDatabase =
     process.env.DATABASE_URL
         ? describe
@@ -113,5 +238,55 @@ describeWithDatabase(
                 ).toBe(incident.createdAt);
             },
         );
+<<<<<<< HEAD
+=======
+
+        it(
+            'returns inserted incidents',
+            async () => {
+                await insertIncidents(testIncidents, database);
+                const insidents = await repository.findPage({ limit: 5, cursor: null });
+                expect(insidents.length).toEqual(5);
+                expect(insidents).toEqual(expect.arrayContaining(testIncidents));
+            }
+        );
+
+        it(
+            'empty table return []',
+            async () => {
+                const insidents = await repository.findPage({ limit: 5, cursor: null });
+                expect(insidents.length).toEqual(0);
+                expect(insidents).toEqual([]);
+            }
+        );
+
+        it(
+            'cursor and limit return appropriate page',
+            async () => {
+                const generatedIncidents = generateTestIncidents(13);
+                const expectedInOrder = [...generatedIncidents].sort((a, b) => {
+                    const dateDifference = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                    if (dateDifference !== 0) return dateDifference;
+                    return b.id.localeCompare(a.id);
+                });
+                await insertIncidents(generatedIncidents, database);
+                const limit = 5;
+                // Page 1
+                const insidents = await repository.findPage({ limit: limit, cursor: null });
+                expect(insidents.length).toEqual(limit);
+                expect(insidents).toEqual(expectedInOrder.slice(0, limit));
+                // Page 2
+                const page2Cursor = { createdAt: insidents[limit - 1].createdAt, id: insidents[limit - 1].id };
+                const insidents2 = await repository.findPage({ limit: limit, cursor: page2Cursor });
+                expect(insidents2.length).toEqual(limit);
+                expect(insidents2).toEqual(expectedInOrder.slice(1 * limit, limit * 2));
+                // Page 3
+                const page3Cursor = { createdAt: insidents2[limit - 1].createdAt, id: insidents2[limit - 1].id };
+                const insidents3 = await repository.findPage({ limit: limit, cursor: page3Cursor });
+                expect(insidents3.length).toEqual(expectedInOrder.length - limit * 2);
+                expect(insidents3).toEqual(expectedInOrder.slice(2 * limit, expectedInOrder.length));
+            }
+        );
+>>>>>>> day_13
     },
 );

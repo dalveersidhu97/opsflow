@@ -21,10 +21,13 @@ import {
     CLOCK,
     INCIDENT_ID_GENERATOR,
 } from '../src/incidents/application/ports.js';
-import { INCIDENT_PRIORITIES } from '../src/incidents/domain/incident.js';
+import { Incident, INCIDENT_PRIORITIES } from '../src/incidents/domain/incident.js';
 import {
     INCIDENT_REPOSITORY,
+    IncidentCursor,
+    IncidentRepository,
 } from '../src/incidents/application/incident.repository.js';
+import { INCIDENT_DEFAULT_LIMIT, INCIDENT_MAX_LIMIT, INCIDENT_MIN_LIMIT } from '../src/incidents/constants/incident-pagination-contants.js';
 
 interface OpenApiTestSchema {
     required?: string[];
@@ -36,6 +39,85 @@ interface OpenApiTestSchema {
             maxLength?: number;
         }
     >;
+}
+
+const testIncidents: Incident[] = [
+    {
+        id: 'incident-1',
+        createdAt: '2026-09-19T04:39:31.864Z',
+        description: 'Broken ring scanner.',
+        priority: 'HIGH',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'incident-2',
+        createdAt: '2026-09-18T04:39:31.864Z',
+        description: 'Network error on site.',
+        priority: 'CRITICAL',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'incident-3',
+        createdAt: '2026-09-17T04:39:31.864Z',
+        description: 'Main gate camera failed.',
+        priority: 'MEDIUM',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'incident-4',
+        createdAt: '2026-08-17T04:39:31.864Z',
+        description: 'Shortage of safety wests.',
+        priority: 'LOW',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    },
+    {
+        id: 'incident-5',
+        createdAt: '2026-08-16T04:39:31.864Z',
+        description: 'Main gate camera failed.',
+        priority: 'MEDIUM',
+        reporterId: 'reporter-1',
+        status: 'OPEN',
+        title: 'Damaged ring scanner'
+    }
+];
+
+function generateTestIncidents(count: number): Incident[] {
+    const priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+    const statuses = ['OPEN'] as const;
+
+    const startTime = Date.UTC(2026, 8, 19, 12, 0, 0);
+
+    return Array.from({ length: count }, (_, index): Incident => {
+        // Every 3 incidents have the same createdAt.
+        // This forces the DB to use id as a tie-breaker.
+        const timestampGroup = Math.floor(index / 3);
+
+        return {
+            id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+
+            createdAt: new Date(
+                startTime - timestampGroup * 60_000,
+            ).toISOString(),
+
+            title: `Test incident ${index + 1}`,
+
+            description: `Test incident description ${index + 1}`,
+
+            priority: priorities[index % priorities.length],
+
+            reporterId: `reporter-${(index % 5) + 1}`,
+
+            status: statuses[index % statuses.length],
+        };
+    });
 }
 
 describe('Incidents API', () => {
@@ -65,6 +147,7 @@ describe('Incidents API', () => {
                 )
                 .useValue({
                     save: async () => undefined,
+                    findPage: async () => []
                 })
                 .compile();
 
@@ -423,4 +506,129 @@ describe('Incidents API', () => {
             ).toBe(2_000);
         },
     );
+
+    it(
+        'rejects invalid cursor',
+        async () => {
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit: 1, cursor: 'sdfsdf34534errgf' })
+                .expect(400);
+            expect(response.body.code).toBe('INVALID_INCIDENT_CURSOR');
+        }
+    )
+
+    it(
+        'rejects invalid limit',
+        async () => {
+            let response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit: INCIDENT_MAX_LIMIT + 1, cursor: null })
+                .expect(400);
+            expect(response.body.issues).toContain(`Limit must not exceed ${INCIDENT_MAX_LIMIT}`);
+            expect(response.body.code).toBe('REQUEST_VALIDATION_FAILED');
+
+            response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit: INCIDENT_MIN_LIMIT - 1, cursor: null })
+                .expect(400);
+            expect(response.body.issues).toContain(`Limit must be at least ${INCIDENT_MIN_LIMIT}`);
+            expect(response.body.code).toBe('REQUEST_VALIDATION_FAILED');
+
+            response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit: 'xsd', cursor: null })
+                .expect(400);
+            expect(response.body.issues).toContain('Limit must be an integer');
+            expect(response.body.code).toBe('REQUEST_VALIDATION_FAILED');
+        }
+    )
+
+    it(
+        'returns 200 OK with expected incidents and nextCursor',
+        async () => {
+            const repository = app.get<IncidentRepository>(
+                INCIDENT_REPOSITORY,
+            );
+            vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents.slice(0, 3));
+            const expectedCursor: IncidentCursor = { createdAt: testIncidents[1].createdAt, id: testIncidents[1].id };
+            const expectedCursorBase64 = Buffer.from(JSON.stringify(expectedCursor)).toString('base64url');
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit: 2 })
+                .expect(200);
+            expect(response.body.items.length).toBe(2);
+            expect(response.body.items[0]).toEqual(expect.objectContaining({ id: testIncidents[0].id }));
+            expect(response.body.items[1]).toEqual(expect.objectContaining({ id: testIncidents[1].id }));
+            expect(response.body.nextCursor).toBe(expectedCursorBase64);
+        }
+    )
+
+    it(
+        'returns null nextCursor if its last page',
+        async () => {
+            const repository = app.get<IncidentRepository>(
+                INCIDENT_REPOSITORY,
+            );
+            vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents.slice(0, 5));
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit: 5 })
+                .expect(200);
+            expect(response.body.items.length).toBe(5);
+            let i = 0;
+            for (let incident of response.body.items) {
+                expect(incident).toEqual(expect.objectContaining({ id: testIncidents[i].id }));
+                i++;
+            }
+            expect(response.body.nextCursor).toBe(null);
+        }
+    )
+    it(
+        `default page size limit is ${INCIDENT_DEFAULT_LIMIT}`,
+        async () => {
+            const testIncidents: Incident[] = generateTestIncidents(INCIDENT_DEFAULT_LIMIT + 5);
+            const repository = app.get<IncidentRepository>(
+                INCIDENT_REPOSITORY,
+            );
+            vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents);
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents')
+                .expect(200);
+            expect(response.body.items.length).toBe(INCIDENT_DEFAULT_LIMIT);
+        }
+    )
+    it(
+        'returns correct next page by using cursor',
+        async () => {
+            const testIncidents: Incident[] = generateTestIncidents(25);
+            const repository = app.get<IncidentRepository>(
+                INCIDENT_REPOSITORY,
+            );
+            const limit = 5;
+            const lastPage = 1;
+            vi.spyOn(repository, 'findPage').mockResolvedValue(testIncidents.slice(limit * lastPage, (lastPage + 1) * limit + 1));
+            const cursor: IncidentCursor = { createdAt: testIncidents[lastPage * limit].createdAt, id: testIncidents[lastPage * limit].id };
+            const nextCursor = Buffer.from(JSON.stringify(cursor)).toString('base64url');
+            const expectedIncidents = testIncidents.slice(limit * lastPage, lastPage * limit + limit);
+            const expectedCursor: IncidentCursor = { createdAt: testIncidents[(lastPage + 1) * limit - 1].createdAt, id: testIncidents[(lastPage + 1) * limit - 1].id };
+            const expectedNextCursor = Buffer.from(JSON.stringify(expectedCursor)).toString('base64url');
+            const response = await request(
+                app.getHttpServer(),
+            )
+                .get('/v1/incidents').query({ limit, cursor: nextCursor })
+                .expect(200);
+            expect(response.body.items.length).toBe(limit);
+            expect(response.body.items.map((incident: any) => incident.id)).toStrictEqual(expectedIncidents.map(i => i.id));
+            expect(response.body.nextCursor).toBe(expectedNextCursor);
+        }
+    )
 });

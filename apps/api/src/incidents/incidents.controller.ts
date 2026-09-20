@@ -2,12 +2,15 @@ import {
     BadRequestException,
     Body,
     Controller,
+    Get,
     HttpStatus,
     Post,
+    Query,
 } from '@nestjs/common';
 import {
     ApiBadRequestResponse,
     ApiCreatedResponse,
+    ApiOkResponse,
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
@@ -17,6 +20,10 @@ import { InputValidationError } from './domain/input-validation.error.js';
 import { CreateIncidentRequestDto } from './http/create-incident-request.dto.js';
 import { IncidentResponseDto } from './http/incident-response.dto.js';
 import { mapIncidentResponse } from './http/map-incident-response.js';
+import { ListIncidentsQueryDto } from './http/list-incidents-query.dto.js';
+import { ListIncidentsService } from './application/list-incidents.service.js';
+import { ListIncidentsResponseDto } from './http/list-incidents-response.dto.js';
+import { IncidentCursorError } from './application/invalid-incident-cursor.error.js';
 
 const DEMO_AUTHENTICATED_REPORTER_ID =
     'demo-user-001';
@@ -28,8 +35,8 @@ const DEMO_AUTHENTICATED_REPORTER_ID =
 })
 export class IncidentsController {
     constructor(
-        private readonly createIncidentService:
-            CreateIncidentService,
+        private readonly createIncidentService: CreateIncidentService,
+        private readonly listIncidentService: ListIncidentsService
     ) { }
 
     @Post()
@@ -73,6 +80,36 @@ export class IncidentsController {
                 });
             }
 
+            throw error;
+        }
+    }
+
+    @ApiOperation({
+        summary: 'List incidents',
+    })
+    @ApiOkResponse({
+        description:
+            'The incident was created successfully.',
+        type: ListIncidentsResponseDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'The request is invalid.',
+        type: ApiErrorResponseDto,
+    })
+    @Get()
+    async listIncidents(@Query() listIncidentInput: ListIncidentsQueryDto): Promise<ListIncidentsResponseDto> {
+        try {
+            const { incidents, nextCursor } = (await this.listIncidentService.list(listIncidentInput));
+            return { items: incidents.map(mapIncidentResponse), nextCursor };
+        } catch (error) {
+            if (error instanceof IncidentCursorError) {
+                throw new BadRequestException({
+                    "statusCode": 400,
+                    "code": "INVALID_INCIDENT_CURSOR",
+                    "message": "Incident cursor is invalid",
+                    "issues": []
+                });
+            }
             throw error;
         }
     }
