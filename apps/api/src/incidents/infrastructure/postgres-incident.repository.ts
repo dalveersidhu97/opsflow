@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PostgresDatabase } from '../../database/postgres-database.js';
-<<<<<<< HEAD
-import type { IncidentRepository } from '../application/incident.repository.js';
-=======
 import type { FindIncidentPageInput, IncidentRepository } from '../application/incident.repository.js';
->>>>>>> day_13
 import type { Incident } from '../domain/incident.js';
 
 @Injectable()
@@ -14,8 +10,6 @@ export class PostgresIncidentRepository
         private readonly database:
             PostgresDatabase,
     ) { }
-<<<<<<< HEAD
-=======
     async findPage(input: FindIncidentPageInput): Promise<Incident[]> {
         const hasCursor = !!input.cursor;
 
@@ -49,7 +43,6 @@ export class PostgresIncidentRepository
         }));
         return incidents;
     }
->>>>>>> day_13
 
     async save(
         incident: Incident,

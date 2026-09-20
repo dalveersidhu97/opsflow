@@ -30,6 +30,10 @@ export class PostgresDatabase
         });
     }
 
+    getPoolClient() {
+        return this.pool.connect();
+    }
+
     query<Row extends QueryResultRow>(
         text: string,
         values: unknown[] = [],

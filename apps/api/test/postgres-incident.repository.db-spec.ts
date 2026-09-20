@@ -20,8 +20,6 @@ interface StoredIncidentRow {
     created_at: Date;
 }
 
-<<<<<<< HEAD
-=======
 
 const testIncidents: Incident[] = [
     {
@@ -144,7 +142,6 @@ if (
     );
 }
 
->>>>>>> day_13
 const describeWithDatabase =
     process.env.DATABASE_URL
         ? describe
@@ -238,8 +235,6 @@ describeWithDatabase(
                 ).toBe(incident.createdAt);
             },
         );
-<<<<<<< HEAD
-=======
 
         it(
             'returns inserted incidents',
@@ -287,6 +282,5 @@ describeWithDatabase(
                 expect(insidents3).toEqual(expectedInOrder.slice(2 * limit, expectedInOrder.length));
             }
         );
->>>>>>> day_13
     },
 );
