@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PostgresDatabase } from "../../database/postgres-database.js";
 import { CreateRegistrationInput, RegistrationRepository, RegistrationResult } from "../application/registration-repository.js";
+import { DatabaseError } from "pg";
+import { DuplicateEmailError } from "../application/duplicate-email.error.js";
 
 interface RegisteredUserRow {
     id: string;
@@ -74,6 +76,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
             return result;
         } catch (error) {
             await client.query('ROLLBACK');
+            if (error instanceof DatabaseError && error.code === '23505' && error.constraint === 'users_email_unique_idx') {
+                throw new DuplicateEmailError();
+            }
             throw error;
         } finally {
             client.release();

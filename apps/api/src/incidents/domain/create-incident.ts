@@ -7,7 +7,7 @@ import {
     type Incident,
     type IncidentPriority,
 } from './incident.js';
-import { InputValidationError } from './input-validation.error.js';
+import { InputValidationError } from '../../common/domain/input-validation.error.js';
 
 export interface IncidentCreationDependencies {
     readonly newId: () => string;

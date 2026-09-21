@@ -10,6 +10,7 @@ import { randomUUID } from "crypto";
 import { PostgresRegistrationRepository } from "../src/auth/infrastructure/postgres-registration.repository.js";
 import { PostgresDatabase } from "../src/database/postgres-database.js";
 import { ArgonPasswordHasher } from '../src/auth/infrastructure/argon-password-hasher.js';
+import { DuplicateEmailError } from '../src/auth/application/duplicate-email.error.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -117,7 +118,7 @@ describeWithDatabase(
                     passwordHash: passwordHash,
                     role: 'OWNER',
                     userId: randomUUID()
-                })).rejects.toThrow('users_email_unique_idx');
+                })).rejects.toThrow(DuplicateEmailError);
 
                 const usersQuery = await database.query('SELECT id, email, password_hash FROM users');
                 const organizationQuery = await database.query('SELECT id, organization_name FROM organizations');

@@ -3,7 +3,7 @@ import {
     createIncident,
     type IncidentCreationDependencies,
 } from './create-incident.js';
-import { InputValidationError } from './input-validation.error.js';
+import { InputValidationError } from '../../common/domain/input-validation.error.js';
 
 const dependencies: IncidentCreationDependencies = {
     newId: () => 'incident-001',

@@ -16,7 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../common/http/api-error-response.dto.js';
 import { CreateIncidentService } from './application/create-incident.service.js';
-import { InputValidationError } from './domain/input-validation.error.js';
+import { InputValidationError } from '../common/domain/input-validation.error.js';
 import { CreateIncidentRequestDto } from './http/create-incident-request.dto.js';
 import { IncidentResponseDto } from './http/incident-response.dto.js';
 import { mapIncidentResponse } from './http/map-incident-response.js';
