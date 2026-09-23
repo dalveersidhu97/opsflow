@@ -411,9 +411,7 @@ describe('Incidents API', () => {
             vi.spyOn(
                 service,
                 'execute',
-            ).mockRejectedValueOnce(() => {
-                throw new Error(privateError);
-            });
+            ).mockRejectedValueOnce(new Error(privateError));
 
             const response = await request(
                 app.getHttpServer(),

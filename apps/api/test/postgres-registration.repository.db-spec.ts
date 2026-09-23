@@ -100,25 +100,22 @@ describeWithDatabase(
             'duplicate email rolls back the second registration',
             async () => {
                 const plainPassword = 'correct horse battery staple';
+                const plainPassword2 = 'PlainPassword@23';
                 const passwordHash = await new ArgonPasswordHasher().hash(plainPassword);
+                const passwordHash2 = await new ArgonPasswordHasher().hash(plainPassword2);
+                const userId = '123e4567-e89b-42d3-a456-426614174000';
+                const organizationId = '223e4567-e89b-42d3-a456-426614174000';
+                const userId2 = '123e4567-e89b-42d3-a456-426614174001';
+                const organizationId2 = '223e4567-e89b-42d3-a456-426614174002';
 
                 await repository.createRegistration({
                     email: 'testemail@gmail.com',
-                    organizationId: randomUUID(),
+                    organizationId,
                     organizationName: 'Test Organization',
                     passwordHash: passwordHash,
                     role: 'OWNER',
-                    userId: randomUUID()
-                })
-
-                await expect(repository.createRegistration({
-                    email: 'testemail@gmail.com',
-                    organizationId: randomUUID(),
-                    organizationName: 'Test Organization',
-                    passwordHash: passwordHash,
-                    role: 'OWNER',
-                    userId: randomUUID()
-                })).rejects.toThrow(DuplicateEmailError);
+                    userId
+                });
 
                 const usersQuery = await database.query('SELECT id, email, password_hash FROM users');
                 const organizationQuery = await database.query('SELECT id, organization_name FROM organizations');
@@ -127,6 +124,27 @@ describeWithDatabase(
                 expect(usersQuery.rowCount).toBe(1);
                 expect(organizationQuery.rowCount).toBe(1);
                 expect(organizationMembershipsQuery.rowCount).toBe(1);
+
+                await expect(repository.createRegistration({
+                    email: 'testemail@gmail.com',
+                    organizationId: organizationId2,
+                    organizationName: 'Test Organization2',
+                    passwordHash: passwordHash2,
+                    role: 'OWNER',
+                    userId: userId2
+                })).rejects.toThrow(DuplicateEmailError);
+
+                const usersQueryAfter = await database.query('SELECT id, email, password_hash FROM users');
+                const organizationQueryAfter = await database.query('SELECT id, organization_name FROM organizations');
+                const organizationMembershipsQueryAfter = await database.query('SELECT organization_id, user_id, user_role FROM organization_memberships');
+
+                expect(usersQueryAfter.rowCount).toBe(1);
+                expect(organizationQueryAfter.rowCount).toBe(1);
+                expect(organizationMembershipsQueryAfter.rowCount).toBe(1);
+
+                expect(usersQueryAfter.rows[0]).toEqual(usersQuery.rows[0]);
+                expect(organizationQueryAfter.rows[0]).toEqual(organizationQuery.rows[0]);
+                expect(organizationMembershipsQueryAfter.rows[0]).toEqual(organizationMembershipsQuery.rows[0]);
             }
         )
 

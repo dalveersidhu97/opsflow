@@ -13,7 +13,7 @@ export class RegisterRequestDto {
         message: 'email must be a string',
     })
     @IsNotEmpty({ message: 'email must not be empty string' })
-    @IsEmail()
+    @IsEmail({}, { message: "email must be a valid email string" })
     @Transform(({ value }) => {
         if (typeof value === 'string') return value.toLowerCase().trim();
         else return value;
