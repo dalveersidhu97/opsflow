@@ -17,10 +17,6 @@ import {
     createOpenApiDocument,
 } from '../src/app.setup.js';
 import { CreateIncidentService } from '../src/incidents/application/create-incident.service.js';
-import {
-    CLOCK,
-    INCIDENT_ID_GENERATOR,
-} from '../src/incidents/application/ports.js';
 import { Incident, INCIDENT_PRIORITIES } from '../src/incidents/domain/incident.js';
 import {
     INCIDENT_REPOSITORY,
@@ -28,6 +24,8 @@ import {
     IncidentRepository,
 } from '../src/incidents/application/incident.repository.js';
 import { INCIDENT_DEFAULT_LIMIT, INCIDENT_MAX_LIMIT, INCIDENT_MIN_LIMIT } from '../src/incidents/constants/incident-pagination-contants.js';
+import { CLOCK } from '../src/common/ports/clock.js';
+import { ID_GENERATOR } from '../src/common/ports/id-generator.js';
 
 interface OpenApiTestSchema {
     required?: string[];
@@ -136,7 +134,7 @@ describe('Incidents API', () => {
                         ),
                 })
                 .overrideProvider(
-                    INCIDENT_ID_GENERATOR,
+                    ID_GENERATOR,
                 )
                 .useValue({
                     newId: () =>

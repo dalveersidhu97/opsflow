@@ -1,9 +1,8 @@
 
 export const PASSWORD_HASHER = Symbol('PASSWORD_HASHER');
-export const REGISTRATION_ID_GENERATOR = Symbol('REGISTRATION_ID_GENERATOR');
-
-export interface RegistrationIdGenerator {
-    newId(): string;
-}
 
 export const REGISTRATION_REPOSITORY = Symbol('REGISTRATION_REPOSITORY');
+
+export const LOGIN_REPOSITORY = Symbol('LOGIN_REPOSITORY');
+
+export const SESSION_TOKEN_PROVIDER = Symbol('SESSION_TOKEN_PROVIDER');

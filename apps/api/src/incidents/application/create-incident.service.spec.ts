@@ -6,10 +6,8 @@ import {
 } from 'vitest';
 import type { IncidentRepository } from './incident.repository.js';
 import { CreateIncidentService } from './create-incident.service.js';
-import type {
-    Clock,
-    IncidentIdGenerator,
-} from './ports.js';
+import { Clock } from '../../common/ports/clock.js';
+import { IdGenerator } from '../../common/ports/id-generator.js';
 
 describe('CreateIncidentService', () => {
     it(
@@ -23,7 +21,7 @@ describe('CreateIncidentService', () => {
             };
 
             const idGenerator:
-                IncidentIdGenerator = {
+                IdGenerator = {
                 newId: () =>
                     'e2576e72-a55f-4317-a7bb-f08f61c77dce',
             };

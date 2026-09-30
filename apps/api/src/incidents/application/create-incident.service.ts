@@ -10,12 +10,8 @@ import {
     INCIDENT_REPOSITORY,
     type IncidentRepository,
 } from './incident.repository.js';
-import {
-    CLOCK,
-    INCIDENT_ID_GENERATOR,
-    type Clock,
-    type IncidentIdGenerator,
-} from './ports.js';
+import { type Clock, CLOCK } from '../../common/ports/clock.js';
+import { ID_GENERATOR, type IdGenerator } from '../../common/ports/id-generator.js';
 
 @Injectable()
 export class CreateIncidentService {
@@ -23,9 +19,9 @@ export class CreateIncidentService {
         @Inject(CLOCK)
         private readonly clock: Clock,
 
-        @Inject(INCIDENT_ID_GENERATOR)
+        @Inject(ID_GENERATOR)
         private readonly idGenerator:
-            IncidentIdGenerator,
+            IdGenerator,
 
         @Inject(INCIDENT_REPOSITORY)
         private readonly incidentRepository:

@@ -2,13 +2,14 @@ import { INestApplication } from "@nestjs/common";
 import { configureApp } from "../src/app.setup.js";
 import { AppModule } from "../src/app.module.js";
 import { Test } from "@nestjs/testing";
-import { PASSWORD_HASHER, REGISTRATION_ID_GENERATOR, REGISTRATION_REPOSITORY, RegistrationIdGenerator } from "../src/auth/application/ports.js";
+import { PASSWORD_HASHER, REGISTRATION_REPOSITORY } from "../src/auth/application/ports.js";
 import { PasswordHasher } from "../src/auth/application/password-hasher.js";
 import { RegistrationRepository } from "../src/auth/application/registration-repository.js";
 import request from 'supertest';
 import { ORGANIZATION_NAME_MAX_LENGTH, ORGANIZATION_NAME_MIN_LENGTH, REGISTER_EMAIL_MAX_LENGTH, REGISTER_PASSWORD_MAX_LENGTH, REGISTER_PASSWORD_MIN_LENGTH } from "../src/auth/domain/auth.js";
 import { DuplicateEmailError } from "../src/auth/application/duplicate-email.error.js";
 import { RegisterationService } from "../src/auth/application/registeration.service.js";
+import { ID_GENERATOR, IdGenerator } from "../src/common/ports/id-generator.js";
 
 function genStr(length: number) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -30,10 +31,10 @@ describe('Auth API', () => {
             .mockReturnValueOnce(testOrganizationId);
         const moduleReference =
             await Test.createTestingModule({ imports: [AppModule] })
-                .overrideProvider(REGISTRATION_ID_GENERATOR)
-                .useValue({ newId } satisfies RegistrationIdGenerator)
+                .overrideProvider(ID_GENERATOR)
+                .useValue({ newId } satisfies IdGenerator)
                 .overrideProvider(PASSWORD_HASHER)
-                .useValue({ hash: async () => testPasswordHash } satisfies PasswordHasher)
+                .useValue({ hash: async () => testPasswordHash, verify: async () => false } satisfies PasswordHasher)
                 .overrideProvider(REGISTRATION_REPOSITORY)
                 .useValue({
                     createRegistration: async (input) => {

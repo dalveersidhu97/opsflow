@@ -8,9 +8,10 @@ import { IncidentsController } from './incidents.controller.js';
 import { incidentProviders } from './infrastructure/incident.providers.js';
 import { PostgresIncidentRepository } from './infrastructure/postgres-incident.repository.js';
 import { ListIncidentsService } from './application/list-incidents.service.js';
+import { CommonModule } from '../common/common.module.js';
 
 @Module({
-    imports: [DatabaseModule],
+    imports: [DatabaseModule, CommonModule],
     controllers: [IncidentsController],
     providers: [
         CreateIncidentService,

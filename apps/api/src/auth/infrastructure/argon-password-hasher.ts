@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { PasswordHasher } from "../application/password-hasher.js";
+import type { PasswordHasher } from "../application/password-hasher.js";
 import { Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -9,4 +9,7 @@ export class ArgonPasswordHasher implements PasswordHasher {
             type: argon2.argon2id
         });
     };
+    async verify(plainPassword: string, passwordHash: string): Promise<boolean> {
+        return await argon2.verify(passwordHash, plainPassword);
+    }
 }
