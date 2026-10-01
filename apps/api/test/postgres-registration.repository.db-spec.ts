@@ -38,6 +38,9 @@ describeWithDatabase(
         });
 
         afterAll(async () => {
+            await database.query('DELETE FROM organization_memberships');
+            await database.query('DELETE FROM organizations');
+            await database.query('DELETE FROM users');
             await database.onModuleDestroy();
         });
 
