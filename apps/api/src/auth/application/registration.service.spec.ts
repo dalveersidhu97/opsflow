@@ -6,10 +6,10 @@ import {
 } from 'vitest';
 import { CreateRegistrationInput, RegistrationRepository, RegistrationResult } from './registration-repository.js';
 import { RegisterationService } from './registeration.service.js';
-import { RegistrationIdGenerator } from './ports.js';
 import { PasswordHasher } from './password-hasher.js';
 import { InputValidationError } from '../../common/domain/input-validation.error.js';
 import { DuplicateEmailError } from './duplicate-email.error.js';
+import { IdGenerator } from '../../common/ports/id-generator.js';
 
 
 describe('registrationService', () => {
@@ -22,11 +22,12 @@ describe('registrationService', () => {
         const userId = '123e4567-e89b-42d3-a456-426614174000';
         const organizationId = '223e4567-e89b-42d3-a456-426614174000';
         const hashedPassowrd = 'TEST_PASSWORD_HASH';
-        const idGenerator: RegistrationIdGenerator = {
+        const idGenerator: IdGenerator = {
             newId: vi.fn().mockReturnValueOnce(userId).mockReturnValueOnce(organizationId)
         };
         const passwordHasher: PasswordHasher = {
-            hash: vi.fn().mockResolvedValue(hashedPassowrd)
+            hash: vi.fn().mockResolvedValue(hashedPassowrd),
+            verify: vi.fn().mockRejectedValue('Not implemented')
         };
         const createRegistration = vi.fn(async (input: CreateRegistrationInput): Promise<RegistrationResult> => ({
             organization: {
@@ -89,11 +90,12 @@ describe('registrationService', () => {
     ])('does not call repository and dependencies if input is invalid', async (rawInput) => {
         const userId = '123e4567-e89b-42d3-a456-426614174000';
         const organizationId = '223e4567-e89b-42d3-a456-426614174000';
-        const idGenerator: RegistrationIdGenerator = {
+        const idGenerator: IdGenerator = {
             newId: vi.fn().mockReturnValueOnce(userId).mockReturnValueOnce(organizationId)
         };
         const passwordHasher: PasswordHasher = {
-            hash: vi.fn().mockResolvedValue('TEST_PASSWORD_HASH')
+            hash: vi.fn().mockResolvedValue('TEST_PASSWORD_HASH'),
+            verify: vi.fn().mockRejectedValue('Not implemented')
         };
         const createRegistration = vi.fn(async (input: CreateRegistrationInput): Promise<RegistrationResult> => ({
             organization: {
@@ -125,12 +127,13 @@ describe('registrationService', () => {
         };
         const userId = '123e4567-e89b-42d3-a456-426614174000';
         const organizationId = '223e4567-e89b-42d3-a456-426614174000';
-        const idGenerator: RegistrationIdGenerator = {
+        const idGenerator: IdGenerator = {
             newId: vi.fn().mockReturnValueOnce(userId).mockReturnValueOnce(organizationId)
         };
         const hashFailure = new Error('hashing error');
         const passwordHasher: PasswordHasher = {
-            hash: vi.fn().mockRejectedValue(hashFailure)
+            hash: vi.fn().mockRejectedValue(hashFailure),
+            verify: vi.fn().mockRejectedValue('Not implemented')
         };
         const createRegistration = vi.fn(async (input: CreateRegistrationInput): Promise<RegistrationResult> => ({
             organization: {
@@ -161,11 +164,12 @@ describe('registrationService', () => {
         };
         const userId = '123e4567-e89b-42d3-a456-426614174000';
         const organizationId = '223e4567-e89b-42d3-a456-426614174000';
-        const idGenerator: RegistrationIdGenerator = {
+        const idGenerator: IdGenerator = {
             newId: vi.fn().mockReturnValueOnce(userId).mockReturnValueOnce(organizationId)
         };
         const passwordHasher: PasswordHasher = {
-            hash: vi.fn().mockResolvedValue('TEST_PASSWORD_HASH')
+            hash: vi.fn().mockResolvedValue('TEST_PASSWORD_HASH'),
+            verify: vi.fn().mockRejectedValue('Not implemented')
         };
         const duplicateEmailError = new DuplicateEmailError();
         const createRegistration = vi.fn().mockRejectedValue(duplicateEmailError);
@@ -191,11 +195,12 @@ describe('registrationService', () => {
         const userId = '123e4567-e89b-42d3-a456-426614174000';
         const organizationId = '223e4567-e89b-42d3-a456-426614174000';
         const hashedPassowrd = 'TEST_PASSWORD_HASH';
-        const idGenerator: RegistrationIdGenerator = {
+        const idGenerator: IdGenerator = {
             newId: vi.fn().mockReturnValueOnce(userId).mockReturnValueOnce(organizationId)
         };
         const passwordHasher: PasswordHasher = {
-            hash: vi.fn().mockResolvedValue(hashedPassowrd)
+            hash: vi.fn().mockResolvedValue(hashedPassowrd),
+            verify: vi.fn().mockRejectedValue('Not implemented')
         };
         const createRegistration = vi.fn((input: CreateRegistrationInput): Promise<RegistrationResult> => {
             return new Promise((resolve) => {

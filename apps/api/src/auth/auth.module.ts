@@ -7,6 +7,7 @@ import { LOGIN_REPOSITORY, REGISTRATION_REPOSITORY } from "./application/ports.j
 import { RegisterationService } from "./application/registeration.service.js";
 import { CommonModule } from "../common/common.module.js";
 import { PostgresLoginRepository } from "./infrastructure/postgres-login.repository.js";
+import { LoginService } from "./application/login-service.js";
 
 
 @Module({
@@ -14,6 +15,7 @@ import { PostgresLoginRepository } from "./infrastructure/postgres-login.reposit
     controllers: [AuthController],
     providers: [
         RegisterationService,
+        LoginService,
         ...authProviders,
         {
             provide: REGISTRATION_REPOSITORY,
