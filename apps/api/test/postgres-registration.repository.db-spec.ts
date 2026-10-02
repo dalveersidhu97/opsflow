@@ -49,16 +49,18 @@ describeWithDatabase(
             async () => {
                 const plainPassword = 'correct horse battery staple';
                 const passwordHash = await new ArgonPasswordHasher().hash(plainPassword);
+                const organizationId = randomUUID();
+                const userId = randomUUID();
                 const result = await repository.createRegistration({
                     email: 'testemail@gmail.com',
-                    organizationId: randomUUID(),
+                    organizationId: organizationId,
                     organizationName: 'Test Organization',
                     passwordHash: passwordHash,
                     role: 'OWNER',
-                    userId: randomUUID()
+                    userId: userId
                 });
-                const usersQuery = await database.query('SELECT id, email, password_hash FROM users');
-                const organizationQuery = await database.query('SELECT id, organization_name FROM organizations');
+                const usersQuery = await database.query('SELECT id, email, password_hash FROM users WHERE id = $1', [userId]);
+                const organizationQuery = await database.query('SELECT id, organization_name FROM organizations WHERE id = $1', [organizationId]);
                 const organizationMembershipsQuery = await database.query('SELECT organization_id, user_id, user_role FROM organization_memberships');
 
                 expect(usersQuery.rowCount).toBe(1);
@@ -80,17 +82,19 @@ describeWithDatabase(
             async () => {
                 const plainPassword = 'correct horse battery staple';
                 const passwordHash = await new ArgonPasswordHasher().hash(plainPassword);
+                const organizationId = randomUUID();
+                const userId = randomUUID();
                 await expect(repository.createRegistration({
                     email: 'testemail@gmail.com',
-                    organizationId: randomUUID(),
+                    organizationId: organizationId,
                     organizationName: 'Test Organization',
                     passwordHash: passwordHash,
                     role: 'ADMIN' as unknown as 'OWNER',
-                    userId: randomUUID()
+                    userId: userId
                 })).rejects.toThrow('organization_memberships_user_role_check');
 
-                const usersQuery = await database.query('SELECT id, email, password_hash FROM users');
-                const organizationQuery = await database.query('SELECT id, organization_name FROM organizations');
+                const usersQuery = await database.query('SELECT id, email, password_hash FROM users WHERE id = $1', [userId]);
+                const organizationQuery = await database.query('SELECT id, organization_name FROM organizations WHERE id = $1', [organizationId]);
                 const organizationMembershipsQuery = await database.query('SELECT organization_id, user_id, user_role FROM organization_memberships');
 
                 expect(usersQuery.rowCount).toBe(0);

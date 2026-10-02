@@ -31,6 +31,7 @@ describe('Auth API', () => {
     const testDate = new Date('2026-09-30T12:00:00.000Z');
     const testRawSession = 'GENERATED_SESSION';
     const testSessionDigest = 'SESSION_DIGEST';
+    const testUserEmail = 'test@useremial.com';
 
     let passwordHasher: Mocked<PasswordHasher>;
     let loginRepository: Mocked<LoginRepository>;
@@ -51,6 +52,15 @@ describe('Auth API', () => {
                     id: testUserId,
                     email,
                     passwordHash: testPasswordHash
+                }
+            }),
+            findUserBySession: vi.fn(async () => {
+                return {
+                    userId: testUserId,
+                    email: testUserEmail,
+                    createdAt: testDate,
+                    expiresAt: new Date(testDate.getTime() + SESSION_TTL_MS),
+                    revokedAt: null
                 }
             })
         };
@@ -536,5 +546,107 @@ describe('Auth API', () => {
         const cookies = setCookieParser.parse(response.headers["set-cookie"]);
         const sessionCookie = cookies.find(cookie => cookie.name === "opsflow_session");
         expect(sessionCookie).not.toBeDefined();
+    });
+
+    it('valid session gets 200 OK response', async () => {
+        const response = await request(app.getHttpServer())
+            .get('/v1/auth/me')
+            .set("Cookie", `opsflow_session=${testRawSession}`)
+            .expect(200);
+        expect(response.body).toEqual({
+            id: testUserId,
+            email: testUserEmail
+        });
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(loginRepository.findUserBySession).toHaveBeenCalledExactlyOnceWith(testSessionDigest);
+    });
+
+    it('missiion cookie gets unauthorized response', async () => {
+        const response = await request(app.getHttpServer())
+            .get('/v1/auth/me')
+            .expect(401);
+        expect(response.body).toEqual({
+            "code": "INVALID_SESSION",
+            "issues": [],
+            "message": "Unauthorized",
+            "statusCode": 401
+        });
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(loginRepository.findUserBySession).not.toHaveBeenCalled();
+    });
+
+    it('unknown session gets unauthorized response', async () => {
+        loginRepository.findUserBySession.mockResolvedValueOnce(null);
+        const response = await request(app.getHttpServer())
+            .get('/v1/auth/me')
+            .set("Cookie", `opsflow_session=${testRawSession}`)
+            .expect(401);
+        expect(response.body).toEqual({
+            "code": "INVALID_SESSION",
+            "issues": [],
+            "message": "Unauthorized",
+            "statusCode": 401
+        });
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(loginRepository.findUserBySession).toHaveBeenCalledExactlyOnceWith(testSessionDigest);
+    });
+
+    it('expired session gets unauthorized response', async () => {
+        loginRepository.findUserBySession.mockResolvedValueOnce({
+            userId: testUserId,
+            email: testUserEmail,
+            createdAt: testDate,
+            expiresAt: new Date(testDate.getTime()),
+            revokedAt: null
+        });
+        const response = await request(app.getHttpServer())
+            .get('/v1/auth/me')
+            .set("Cookie", `opsflow_session=${testRawSession}`)
+            .expect(401);
+        expect(response.body).toEqual({
+            "code": "INVALID_SESSION",
+            "issues": [],
+            "message": "Unauthorized",
+            "statusCode": 401
+        });
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(loginRepository.findUserBySession).toHaveBeenCalledExactlyOnceWith(testSessionDigest);
+    });
+
+    it('revoked session gets unauthorized response', async () => {
+        loginRepository.findUserBySession.mockResolvedValueOnce({
+            userId: testUserId,
+            email: testUserEmail,
+            createdAt: testDate,
+            expiresAt: new Date(testDate.getTime() + SESSION_TTL_MS),
+            revokedAt: new Date(testDate.getTime())
+        });
+        const response = await request(app.getHttpServer())
+            .get('/v1/auth/me')
+            .set("Cookie", `opsflow_session=${testRawSession}`)
+            .expect(401);
+        expect(response.body).toEqual({
+            "code": "INVALID_SESSION",
+            "issues": [],
+            "message": "Unauthorized",
+            "statusCode": 401
+        });
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(loginRepository.findUserBySession).toHaveBeenCalledExactlyOnceWith(testSessionDigest);
+    });
+
+    it('respository failiure gets internal server error', async () => {
+        const failiure = new Error('Database Error');
+        loginRepository.findUserBySession.mockRejectedValueOnce(failiure);
+        const response = await request(app.getHttpServer())
+            .get('/v1/auth/me')
+            .set("Cookie", `opsflow_session=${testRawSession}`)
+            .expect(500);
+        expect(response.body).toEqual({
+            "message": "Internal server error",
+            "statusCode": 500,
+        });
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(loginRepository.findUserBySession).toHaveBeenCalledExactlyOnceWith(testSessionDigest);
     });
 })

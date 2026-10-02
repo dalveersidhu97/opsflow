@@ -95,8 +95,40 @@ describeWithDatabase('PostgresLoginRepository', () => {
         expect(user?.passwordHash).toBe(existingUser.password_hash);
     });
 
-    it('findUserByEmail give null for non existing user', async () => {
+    it('findUserByEmail gives null for non existing user', async () => {
         const user = await loginRepository.findUserByEmail(nonExistingUser.email);
         expect(user).toBe(null);
+    });
+
+    it('findUserBySession returns right user for valid session', async () => {
+        const existingSession = {
+            userId: existingUser.id,
+            id: testId,
+            tokenDigest: 'TOKEN_DIGEST',
+            createdAt: testDate.toISOString(),
+            expiresAt: new Date(testDate.getTime() + SESSION_TTL_MS).toISOString(),
+            revokedAt: null
+        }
+
+        await database.query(
+            `
+            INSERT INTO sessions (id, user_id, token_digest, created_at, expires_at) VALUES ($1, $2, $3, $4, $5);
+            `,
+            [existingSession.id, existingSession.userId, existingSession.tokenDigest, existingSession.createdAt, existingSession.expiresAt]
+        );
+
+        const result = await loginRepository.findUserBySession(existingSession.tokenDigest);
+
+        expect(result).not.toBe(null);
+        expect(result?.email).toBe(existingUser.email);
+        expect(result?.createdAt.toISOString()).toBe(existingSession.createdAt);
+        expect(result?.expiresAt.toISOString()).toBe(existingSession.expiresAt);
+        expect(result?.userId).toBe(existingSession.userId);
+        expect(result?.revokedAt).toBe(null);
+    });
+
+    it('findUserBySession returns null for invalid session', async () => {
+        const result = await loginRepository.findUserBySession('unknown session digest.');
+        expect(result).toBe(null);
     });
 });
