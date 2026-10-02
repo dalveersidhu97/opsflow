@@ -8,6 +8,7 @@ import {
     SwaggerModule,
     type OpenAPIObject,
 } from '@nestjs/swagger';
+import cookieParser from "cookie-parser";
 import { createRequestValidationPipe } from './common/http/request-validation.pipe.js';
 
 export function configureApp(
@@ -27,6 +28,8 @@ export function configureApp(
             process.env.WEB_ORIGIN ??
             'http://localhost:5173',
     });
+
+    app.use(cookieParser());
 }
 
 export function createOpenApiDocument(

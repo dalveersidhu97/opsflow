@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, HttpCode, HttpStatus, Post, Res, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Get, Header, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
 import { ApiBadRequestResponse, ApiConflictResponse, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { ApiErrorResponseDto } from "../common/http/api-error-response.dto.js";
 import { InputValidationError } from "../common/domain/input-validation.error.js";
@@ -10,8 +10,10 @@ import { LoginRequestDto } from "./http/login-request.dto.js";
 import { LoginResponseDto } from "./http/login-response.dto.js";
 import { InvalidCredentialError } from "./application/invalid-credential.error.js";
 import { LoginService } from "./application/login-service.js";
-import type { Response } from "express";
-
+import type { Response, Request } from "express";
+import { SessionService } from "./application/session-service.js";
+import { InvalidSessionError } from "./application/invalid-session.error.js";
+import { UserResponseDto } from "./http/user-response.dto.js";
 
 @ApiTags('auth')
 @Controller({
@@ -22,6 +24,7 @@ export class AuthController {
     constructor(
         private readonly registrationService: RegisterationService,
         private readonly loginService: LoginService,
+        private readonly sessionService: SessionService
     ) { }
 
     @Post('register')
@@ -127,6 +130,44 @@ export class AuthController {
                     statusCode: HttpStatus.UNAUTHORIZED,
                     code: 'INVALID_CREDENTIALS',
                     message: 'Invalid email or password',
+                    issues: [],
+                });
+            }
+
+            throw error;
+        }
+    }
+
+    @Get('me')
+    @HttpCode(HttpStatus.OK)
+    @ApiOkResponse({
+        description: 'Session authenticated',
+        type: UserResponseDto,
+        example: {
+            id: 'sdfhl1l234435lsk2',
+            email: 'user@email.com'
+        }
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Missing, invalid, expired or revoked session.',
+    })
+    @Header('Cache-Control', 'no-store')
+    async authenticate(
+        @Req() request: Request
+    ): Promise<{ id: string, email: string }> {
+        try {
+            const sessionToken: unknown = request.cookies?.['opsflow_session'];
+            if (typeof sessionToken !== 'string' || sessionToken.length === 0) {
+                throw new InvalidSessionError();
+            }
+            const user = await this.sessionService.authenticate(sessionToken);
+            return { id: user.id, email: user.email };
+        } catch (error: unknown) {
+            if (error instanceof InvalidSessionError) {
+                throw new UnauthorizedException({
+                    statusCode: HttpStatus.UNAUTHORIZED,
+                    code: 'INVALID_SESSION',
+                    message: 'Unauthorized',
                     issues: [],
                 });
             }

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { CreateSessionInput, LoginRepository, LoginUser } from "../application/login-repository.js";
+import type { CreateSessionInput, LoginRepository, LoginUser, UserSession } from "../application/login-repository.js";
 import { PostgresDatabase } from "../../database/postgres-database.js";
 
 @Injectable()
@@ -8,6 +8,26 @@ export class PostgresLoginRepository implements LoginRepository {
     constructor(
         private readonly database: PostgresDatabase,
     ) { }
+    async findUserBySession(tokenDigest: string): Promise<UserSession | null> {
+        const result = await this.database.query<UserSession>(
+            `
+                SELECT
+                    u.id AS "userId",
+                    u.email,
+                    s.created_at AS "createdAt",
+                    s.expires_at AS "expiresAt",
+                    s.revoked_at AS "revokedAt"
+                FROM sessions s
+                JOIN users u ON u.id = s.user_id
+                WHERE s.token_digest = $1
+            `,
+            [tokenDigest],
+        );
+
+        const row = result.rows[0] ?? null;
+
+        return row;
+    }
 
     async findUserByEmail(email: string): Promise<LoginUser | null> {
         const result = await this.database.query<LoginUser>(
